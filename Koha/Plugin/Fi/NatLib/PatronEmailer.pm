@@ -226,7 +226,7 @@ sub tool_step2 {
         $csv->column_names(@$column_names);
 
         while ( my $hr = $csv->getline_hr($fh_in) ) {
-            my $email = generate_email( $hr, $body_template, $subject, $is_html, $notice, $add_unsubscribe_link );
+            my $email = $self->generate_email( $hr, $body_template, $subject, $is_html, $notice, $add_unsubscribe_link );
             if( $email ){
                 push @to_send, $email;
             } else {
@@ -254,7 +254,7 @@ sub tool_step2 {
                 print $template->output();
                 return;
             }
-            my $email = generate_email( $row, $body_template, $subject, $is_html, $notice, $add_unsubscribe_link );
+            my $email = $self->generate_email( $row, $body_template, $subject, $is_html, $notice, $add_unsubscribe_link );
             if( $email ){
                 push @to_send, $email;
             } else {
@@ -358,7 +358,7 @@ sub cronjob_nightly {
                 warn "report_id $report_id, notice_id $notice_id: no cardnumber";
                 last;
             }
-            my $email = generate_email( $row, $body_template, $subject, $is_html, $notice, $add_unsubscribe_link );
+            my $email = $self->generate_email( $row, $body_template, $subject, $is_html, $notice, $add_unsubscribe_link );
             $message_queue_rs->create(
                 {
                     borrowernumber => $email->{borrowernumber},
@@ -378,6 +378,7 @@ sub cronjob_nightly {
 }
 
 sub generate_email {
+    my $self                  = shift;
     my $line                  = shift;
     my $body_template         = shift;
     my $subject               = shift;
@@ -412,13 +413,19 @@ sub generate_email {
         }
     }
 
+    my $borrowernumber = $borrower->borrowernumber;
+    my $key            = "unsub-$borrowernumber-$module,$code";
+    my $key_all        = "unsub-$borrowernumber-__ALL__";
+    my $unsubscribed   = $self->retrieve_data($key) || $self->retrieve_data($key_all);
+    my $status         = $unsubscribed ? 'deleted' : 'pending';
+
     my $prepped_email =
         {
             borrowernumber         => $borrower->borrowernumber(),
             subject                => $subject,
             content                => $body,
             message_transport_type => 'email',
-            status                 => 'pending',
+            status                 => $status,
             to_address             => $line->{email} || $borrower->email,
             from_address           => $line->{from} || C4::Context->preference('KohaAdminEmailAddress'),
             branchcode => $branchcode,
