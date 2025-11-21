@@ -263,13 +263,15 @@ sub tool_step2 {
         }
     }
 
+    my $notice_id       = $notice ? $notice->id : undef;
     my $report_id       = $cgi->param("report_id");
-    my $schedule_notice = $cgi->param("schedule_notice") ? 1           : 0;
-    my $notice_id       = $notice                        ? $notice->id : undef;
+    my $schedule_notice = $cgi->param("schedule_notice") ? 1 : 0;
+    my $use_built_in    = $cgi->param('use_built_in')    ? 1 : 0;
     my $opts            = {
         add_unsubscribe_link => $add_unsubscribe_link,
         notice_id            => $notice_id,
         report_id            => $report_id,
+        use_built_in         => $use_built_in,
     };
     $opts = encode_json($opts);
 
@@ -292,13 +294,14 @@ sub schedule_notice {
     $opts ||= {};
 
     return unless $opts->{report_id};
-    return unless $opts->{notice_id};
+    return if !$opts->{notice_id} && !$opts->{use_built_in};
 
     my $scheduled_notices_json = $self->retrieve_data('scheduled_notices');
     $scheduled_notices_json ||= '{}';
     my $scheduled_notices = decode_json($scheduled_notices_json);
 
-    my $key = 'report_id_' . $opts->{report_id} . '_notice_id_' . $opts->{notice_id};
+    my $notice_id = $opts->{notice_id} ? $opts->{notice_id} : 'BUILT_IN';
+    my $key       = 'report_id_' . $opts->{report_id} . '_notice_id_' . $notice_id;
     $scheduled_notices->{$key} = $opts;
     $opts->{scheduled_on} = dt_from_string;
 
@@ -324,14 +327,22 @@ sub cronjob_nightly {
         my $scheduled_notice     = $scheduled_notices->{$key};
         my $notice_id            = $scheduled_notice->{notice_id};
         my $add_unsubscribe_link = $scheduled_notice->{add_unsubscribe_link} || 0;
-        my $notice               = Koha::Notice::Templates->find( { id => $notice_id } );
-        my $body_template        = $notice->content;
-        my $subject              = $notice->title;
-        my $letter_code          = $notice->code;
-        my $is_html              = $notice->is_html;
-        my $report_id            = $scheduled_notice->{report_id};
-        my $report               = Koha::Reports->find($report_id);
-        my $sql                  = $report->savedsql;
+        my ( $notice, $body_template, $subject, $letter_code, $is_html );
+        if ( "$notice_id" eq 'BUILT_IN' ) {
+            $body_template = $self->retrieve_data('body');
+            $subject       = $self->retrieve_data('subject');
+            $is_html       = $self->retrieve_data('is_html');
+            $letter_code   = "BUILT_IN";
+        } else {
+            $notice        = Koha::Notice::Templates->find( { id => $notice_id } );
+            $body_template = $notice->content;
+            $subject       = $notice->title;
+            $letter_code   = $notice->code;
+            $is_html       = $notice->is_html;
+        }
+        my $report_id = $scheduled_notice->{report_id};
+        my $report    = Koha::Reports->find($report_id);
+        my $sql       = $report->savedsql;
         my ( $sth, $errors );
 
         if ( C4::Context->preference('Version') ge '21.060000' ) {
@@ -464,9 +475,9 @@ sub tool_step3 {
     my $opts_param      = $cgi->param("opts");
     my $opts            = decode_json($opts_param);
     my $schedule_notice = $cgi->param("schedule_notice") ? 1 : 0;
-    if ( $schedule_notice && $opts->{report_id} && $opts->{notice_id} ) {
+    if ( $schedule_notice && $opts->{report_id} && ( $opts->{notice_id} || $opts->{use_built_in} ) ) {
         $self->schedule_notice($opts);
-        $template->param(scheduled => 1);
+        $template->param( scheduled => 1 );
     }
 
     print $cgi->header("text/html;charset=UTF-8");
@@ -500,12 +511,19 @@ sub configure {
         my $scheduled_notices = decode_json($scheduled_notices_json);
         foreach my $key ( keys %$scheduled_notices ) {
             $scheduled_notices->{$key}->{id} = $key;
-            $scheduled_notices->{$key}->{id} =~ /report_id_(\d+)_notice_id_(\d+)/;
+            $scheduled_notices->{$key}->{id} =~ /report_id_(\d+)_notice_id_([0-9A-Z_]+)/;
             my ( $report_id, $notice_id ) = ( $1, $2 );
             my $report      = Koha::Reports->find($report_id);
             my $report_name = $report ? $report->report_name : '-';
-            my $notice      = Koha::Notice::Templates->find( { id => $notice_id } );
-            my $letter_code = $notice ? $notice->code : '-';
+            my $letter_code;
+            if ( $notice_id =~ /^\d+$/ ) {
+                my $notice = Koha::Notice::Templates->find( { id => $notice_id } );
+                $letter_code = $notice ? $notice->code : '-';
+            } elsif ( $notice_id eq 'BUILT_IN' ) {
+                $letter_code = $notice_id;
+            } else {
+                $letter_code = '-';
+            }
             $scheduled_notices->{$key}->{report_name} = $report_name;
             $scheduled_notices->{$key}->{letter_code} = $letter_code;
         }
@@ -520,7 +538,7 @@ sub configure {
         my $scheduled_notices = decode_json($scheduled_notices_json);
 
         foreach my $param_key ( keys %{ $cgi->Vars } ) {
-            if ( $param_key =~ /^delete_report_id_(\d+)_notice_id_(\d+)$/ && $cgi->param($param_key) ) {
+            if ( $param_key =~ /^delete_report_id_(\d+)_notice_id_([0-9A-Z_]+)$/ && $cgi->param($param_key) ) {
                 $param_key =~ s/^delete_//;
                 delete $scheduled_notices->{$param_key};
             }
