@@ -51,7 +51,8 @@ sub unsubscribe {
 
     my $notice = Koha::Notice::Templates->find({ branchcode => $branchcode, module => $module, code => $code });
 
-    my $salt = C4::Context->config('patron_emailer_salt') || '8374892734834839';
+    # KOHA_CONF patron_emailer_salt is deprecated, use plugin's "salt" property instead
+    my $salt = $plugin->retrieve_data('salt') || C4::Context->config('patron_emailer_salt') || '8374892734834839';
     my $hash = md5_hex( $salt . $borrower->id );
 
     return $c->render( status => 403, text => "Patron not matched" ) unless $hash eq $patron_id_hash;

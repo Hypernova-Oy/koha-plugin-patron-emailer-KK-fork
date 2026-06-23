@@ -101,6 +101,15 @@ sub tool {
 sub install() {
     my ( $self, $args ) = @_;
 
+    eval {
+        my $salt = $self->retrieve_data('salt');
+        unless ($salt) {
+            my $min_salt = 1000000000000000;
+            $salt = $min_salt + int(rand(9999999999999999 - $min_salt + 1));
+            $self->store_data({ salt => $salt });
+        }
+    };
+
     return 1;
 }
 
@@ -469,7 +478,13 @@ sub generate_email {
     if( $add_unsubscribe_link ) {
         my $base_url = C4::Context->preference('OPACBaseURL');
 
-        my $salt = C4::Context->config('patron_emailer_salt') || '8374892734834839';
+        my $salt = $self->retrieve_data('salt');
+        unless ($salt) {
+            my $min_salt = 1000000000000000;
+            $salt = $min_salt + int(rand(9999999999999999 - $min_salt + 1));
+            $self->store_data({ salt => $salt });
+        }
+
         my $borrowernumber = $borrower->borrowernumber;
         my $hash = md5_hex( $salt . $borrower->id );
         my $unsubscribe_link
@@ -603,6 +618,7 @@ sub configure {
             $scheduled_notices->{$key}->{letter_code} = $letter_code;
         }
         $template->param( scheduled_notices => $scheduled_notices );
+        $template->param( salt              => $self->retrieve_data('salt') );
 
         print $cgi->header("text/html;charset=UTF-8");
         print $template->output();
@@ -621,6 +637,12 @@ sub configure {
 
         $scheduled_notices_json = encode_json($scheduled_notices);
 
+        my $salt = $cgi->param('salt');
+        unless ($salt) {
+            my $min_salt = 1000000000000000;
+            $salt = $min_salt + int(rand(9999999999999999 - $min_salt + 1));
+        }
+
         $self->store_data(
             {
                 body               => $cgi->param('body')|| "",
@@ -628,6 +650,7 @@ sub configure {
                 delimiter          => $cgi->param('delimiter') || "",
                 is_html            => $cgi->param('is_html') || "",
                 last_configured_by => C4::Context->userenv->{number},
+                salt               => $salt,
                 scheduled_notices  => $scheduled_notices_json,
             }
         );
