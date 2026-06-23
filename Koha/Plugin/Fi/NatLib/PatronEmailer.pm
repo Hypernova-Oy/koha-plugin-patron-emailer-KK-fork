@@ -28,7 +28,8 @@ use utf8;
 use open qw(:utf8);
 
 ## Here we set our plugin version
-our $VERSION = "{VERSION}";
+our $VERSION = "{VERSION}"; #PLACEHOLDER
+our $DATE_UPDATED = "2025-05-28"; #PLACEHOLDER
 
 ## Here is our metadata, some keys are required, some are optional
 our $metadata = {
@@ -36,7 +37,7 @@ our $metadata = {
     author          => 'Kyle M Hall',
     description     => 'This plugin takes a Koha patrons file and sends an email to the patrons found in the file',
     date_authored   => '2015-06-18',
-    date_updated    => '1900-01-01',
+    date_updated    => $DATE_UPDATED,
     minimum_version => '21.1100000',
     maximum_version => undef,
     version         => $VERSION,
