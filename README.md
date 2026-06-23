@@ -7,14 +7,14 @@ The plugin will record the letter code in the database as "PEP\_" + letter code 
 The CSV file must
 
 - Start with a header line which names the columns used
-- Contain a column titled `cardnumber` containing the card numbers of the patrons to be emailed.
+- Contain a column titled `borrowernumber` containing the card numbers of the patrons to be emailed.
 - Contain a column titled `email` containing the email addresses to be emailed ( if a patron has no email the letter will be queued as a print notice'
 
 When configuring the email, template toolkit syntax is used to display any column names in the csv file.
 
 For example, given the file 'Mailer-Report.csv':
 
-    cardnumber, email, firstname, surname, fines, libraryname
+    borrowernumber, email, firstname, surname, fines, libraryname
     10,aaron@example.com,Aaron,Spelling, 0.40, "The Spelling Schoool"
     11,donna@example.com,"Donna Karen E",Moore, 3.80, "Motivation International"
     12,bernice@example.com,Bernice,Documents, -785.00, "Sarbanes Oxley"

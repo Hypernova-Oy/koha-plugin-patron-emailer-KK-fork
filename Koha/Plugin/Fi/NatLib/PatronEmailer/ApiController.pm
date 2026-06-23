@@ -36,7 +36,7 @@ Method that generates and outputs the unsubscribe unsubscribe page html
 sub unsubscribe {
     my $c = shift->openapi->valid_input or return;
 
-    my $cardnumber = $c->validation->param('cardnumber');
+    my $borrowernumber = $c->validation->param('borrowernumber');
     my $patron_id_hash = $c->validation->param('patron_id_hash');
     my $branchcode = $c->validation->param('branchcode') eq '_' ? q{} : $c->validation->param('branchcode');
     my $module = $c->validation->param('module');
@@ -46,7 +46,7 @@ sub unsubscribe {
     my $plugin = Koha::Plugin::Fi::NatLib::PatronEmailer->new;
     my $template = $plugin->get_unsubscribe_page({ filename => 'unsubscribe.tt' });
 
-    my $borrower = Koha::Patrons->find( { cardnumber => $cardnumber } );
+    my $borrower = Koha::Patrons->find( { borrowernumber => $borrowernumber } );
     return $c->render( status => 404, text => "Patron not found" ) unless $borrower;
 
     my $notice = Koha::Notice::Templates->find({ branchcode => $branchcode, module => $module, code => $code });
@@ -61,7 +61,7 @@ sub unsubscribe {
     }
 
     $template->param(
-        cardnumber       => $cardnumber,
+        borrowernumber       => $borrowernumber,
         patron_id_hash   => $patron_id_hash,
         branchcode       => $branchcode || '_',
         module           => $module,

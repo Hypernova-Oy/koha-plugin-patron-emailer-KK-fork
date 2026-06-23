@@ -1,5 +1,5 @@
 {
-  "/patrons/unsubscribe/{patron_id_hash}/{cardnumber}/{branchcode}/{module}/{code}": {
+  "/patrons/unsubscribe/{patron_id_hash}/{borrowernumber}/{branchcode}/{module}/{code}": {
     "get": {
       "x-mojo-to": "Fi::NatLib::PatronEmailer::ApiController#unsubscribe",
       "operationId": "LandingPage",
@@ -15,7 +15,7 @@
           "type": "string"
         },
         {
-          "name": "cardnumber",
+          "name": "borrowernumber",
           "in": "path",
           "description": "Internal patron identifier",
           "required": true,

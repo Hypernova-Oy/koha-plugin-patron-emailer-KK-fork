@@ -229,9 +229,9 @@ sub tool_step2 {
         open my $fh_in, '<', "$upload_dir/$filename" or die "Can't open variable: $!";
 
         my $column_names = $csv->getline($fh_in);
-        unless( any { $_ eq 'cardnumber' } @$column_names ){
+        unless( any { $_ eq 'borrowernumber' } @$column_names ){
             close $fh_in;
-            $template->param( no_cardnumber => 1 );
+            $template->param( no_borrowernumber => 1 );
             print $cgi->header("text/html;charset=UTF-8");
             print $template->output();
             return;
@@ -243,7 +243,7 @@ sub tool_step2 {
             if( $email ){
                 push @to_send, $email;
             } else {
-                push @not_found, $hr->{cardnumber};
+                push @not_found, $hr->{borrowernumber};
             }
         }
         $csv->eof or $csv->error_diag();
@@ -261,8 +261,8 @@ sub tool_step2 {
         }
 
         while ( my $row = $sth->fetchrow_hashref() ) {
-            unless( defined $row->{cardnumber} ){
-                $template->param( no_cardnumber => 1 );
+            unless( defined $row->{borrowernumber} ){
+                $template->param( no_borrowernumber => 1 );
                 print $cgi->header("text/html;charset=UTF-8");
                 print $template->output();
                 return;
@@ -271,7 +271,7 @@ sub tool_step2 {
             if( $email ){
                 push @to_send, $email;
             } else {
-                push @not_found, $row->{cardnumber};
+                push @not_found, $row->{borrowernumber};
             }
         }
     }
@@ -367,8 +367,8 @@ sub cronjob_nightly {
         }
 
         while ( my $row = $sth->fetchrow_hashref() ) {
-            unless ( defined $row->{cardnumber} ) {
-                warn "report_id $report_id, notice_id $notice_id: no cardnumber";
+            unless ( defined $row->{borrowernumber} ) {
+                warn "report_id $report_id, notice_id $notice_id: no borrowernumber";
                 last;
             }
             my $email = $self->generate_email( $row, $body_template, $subject, $is_html, $notice, $add_unsubscribe_link );
@@ -399,7 +399,7 @@ sub generate_email {
     my $notice                = shift;
     my $add_unsubscribe_link  = shift;
 
-    my $borrower = Koha::Patrons->find( { cardnumber => $line->{cardnumber} } );
+    my $borrower = Koha::Patrons->find( { borrowernumber => $line->{borrowernumber} } );
     return unless $borrower;
 
     if ( $notice && $borrower->lang && $notice->lang ne $borrower->lang ) {
@@ -470,10 +470,10 @@ sub generate_email {
         my $base_url = C4::Context->preference('OPACBaseURL');
 
         my $salt = C4::Context->config('patron_emailer_salt') || '8374892734834839';
-        my $cardnumber = $borrower->cardnumber;
+        my $borrowernumber = $borrower->borrowernumber;
         my $hash = md5_hex( $salt . $borrower->id );
         my $unsubscribe_link
-            = "$base_url/api/v1/contrib/patronemailer/patrons/unsubscribe/$hash/$cardnumber/$branchcode/$module/$code";
+            = "$base_url/api/v1/contrib/patronemailer/patrons/unsubscribe/$hash/$borrowernumber/$branchcode/$module/$code";
         if ( $is_html ) {
             $body .= qq{<p>You received this email from your library.<br/>If you would like to unsubscribe, click <a href="$unsubscribe_link">here</a>.};
         } else {

@@ -43,7 +43,7 @@
              <p><label for="report_id">Enter a report id:</label>
              <input type="number" name="report_id" />
              </p>
-             <p><strong>NOTE:</strong>Your file or report must provide a 'cardnumber' column to be used to find relevant Koha accounts</p>
+             <p><strong>NOTE:</strong>Your file or report must provide a 'borrowernumber' column to be used to find relevant Koha accounts</p>
 
         </fieldset>
 
