@@ -1,6 +1,12 @@
 [% INCLUDE 'doc-head-open.inc' %]
  <title>Koha: Patron Emailer: Configuration</title>
 [% INCLUDE 'doc-head-close.inc' %]
+
+<style>
+.logo-supporter {
+  padding: 10px;
+}
+</style>
 </head>
 <body>
 [% INCLUDE 'header.inc' %]
@@ -25,7 +31,9 @@
 
 <div class="main container-fluid" id="doc3">
     <!-- We can access our own plugins resource files using the PLUGIN_PATH variable. -->
-    <img src="[% PLUGIN_PATH %]/logo.png" />
+    <a href="https://bywatersolutions.com/"><img src="[% PLUGIN_PATH %]/webassets/logo-ByWater.png" class="logo-supporter"/></a>
+    <a href="https://www.kansalliskirjasto.fi"><img src="[% PLUGIN_PATH %]/webassets/National_Library_of_Finland_logo.png" class="logo-supporter"/></a>
+    <a href="https://www.hypernova.fi/"><img src="[% PLUGIN_PATH %]/webassets/logo-Hypernova.png" class="logo-supporter"/></a>
 
     <fieldset id="configs">
         <legend>Koha: Patron Emailer: Configuration</legend>
